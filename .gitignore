@@ -1,0 +1,5 @@
+.env
+.env.local
+/incidents
+/templates
+/output
