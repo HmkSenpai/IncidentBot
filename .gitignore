@@ -16,7 +16,7 @@ evolution-api/node_modules/
 /logs_*.txt
 
 # caches Python
-__pycache__/
+/__pycache__/
 *.pyc
 
 # fichiers volumineux / brouillons
