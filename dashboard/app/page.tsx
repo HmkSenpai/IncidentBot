@@ -237,8 +237,8 @@ export default async function Home() {
           </p>
         </div>
         <div className={styles.updated}>
-          <span className={styles.dot} />
-          Temps réel
+          <span className={styles.bullet} aria-hidden="true" />
+          En direct
         </div>
       </header>
 

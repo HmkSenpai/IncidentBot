@@ -1,18 +1,16 @@
 :root {
-  --background: #020617;
-  --surface: #0f172a;
-  --surface-2: #161f33;
-  --foreground: #f8fafc;
-  --foreground-muted: #64748b;
-  --border: #1e293b;
-  --border-strong: #334155;
-  --accent: #22c55e;
-  --accent-soft: rgba(34, 197, 94, 0.12);
-  --blue: #3b82f6;
-  --amber: #f59e0b;
-  --red: #ef4444;
-  --mono: ui-monospace, SFMono-Regular, "Fira Code", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  --paper: #faf7f0;
+  --paper-2: #f2eee3;
+  --ink: #171512;
+  --ink-strong: #000000;
+  --ink-soft: #6b675f;
+  --rule: #dcd6c8;
+  --rule-strong: #b8b19e;
+  --accent: #c33b2b;
+  --accent-soft: rgba(195, 59, 43, 0.08);
+  --mono: ui-monospace, SFMono-Regular, "Geist Mono", "Fira Code", Menlo,
+    Consolas, monospace;
+  --serif: var(--font-serif), Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -33,19 +31,8 @@ body {
 
 body {
   min-height: 100vh;
-  color: var(--foreground);
-  background: var(--background);
-  background-image: radial-gradient(
-      1200px 600px at 80% -10%,
-      rgba(59, 130, 246, 0.08),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 500px at 0% -10%,
-      rgba(34, 197, 94, 0.06),
-      transparent 55%
-    );
-  background-attachment: fixed;
+  color: var(--ink);
+  background: var(--paper);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
