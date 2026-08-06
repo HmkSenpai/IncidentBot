@@ -12,6 +12,7 @@ insert (même philosophie que l'envoi WhatsApp dans whatsapp.py).
 """
 
 import os
+import re
 import sys
 
 # Le client supabase-py est une dépendance optionnelle : si elle n'est pas
@@ -92,7 +93,7 @@ def _parse_commentaires(commentaires):
     return out
 
 
-def _build_row(incident, fiche, docx_name, raw_message):
+def _build_row(incident, fiche, docx_name, raw_message, docx_url=None, docx_path=None):
     row = {
         # champs bruts (parser.py)
         "tt": incident.get("tt"),
@@ -113,6 +114,12 @@ def _build_row(incident, fiche, docx_name, raw_message):
         "docx_name": docx_name,
         "raw_message": raw_message or "",
     }
+
+    # lien de téléchargement de la fiche .docx (bucket "fiches")
+    if docx_url:
+        row["docx_url"] = docx_url
+    if docx_path:
+        row["docx_path"] = docx_path
 
     # champs mappés (fiche) -> colonnes de la table
     if fiche:
@@ -139,26 +146,111 @@ def _build_row(incident, fiche, docx_name, raw_message):
     return row
 
 
-def insert_incident(incident: dict, fiche: dict = None,
-                    docx_name: str = None, raw_message: str = ""):
+def upload_docx(client, local_path: str, docx_name: str):
+    """Upload un .docx généré dans le bucket public 'fiches'.
+    Retourne (docx_url, docx_path) ou (None, None) en cas d'échec.
+    N'échoue jamais : un échec ici signifie juste que la fiche n'aura pas
+    de lien de téléchargement côté dashboard.
+
+    Le nom stocké est sanitizé (espaces et caractères non-URL -> '_') :
+    les chemins avec espaces font échouer le contrôle RLS de Supabase
+    Storage sur `bucket_id` (comparaison sur le chemin encodé)."""
+    storage_name = re.sub(r"[^A-Za-z0-9_.\-]+", "_", docx_name)
+    try:
+        with open(local_path, "rb") as f:
+            content = f.read()
+    except OSError as e:
+        print(f"[supabase_client] Impossible de lire le docx local ({e}).",
+              file=sys.stderr)
+        return None, None
+
+    if not content:
+        return None, None
+
+    try:
+        # "upsert": "true" écrase une fiche déjà présente (cas d'un UPDATE).
+        # Nécessite une policy UPDATE (using + with check) sur storage.objects,
+        # fournie par les migrations 0002/0003/0004.
+        client.storage.from_("fiches").upload(
+            storage_name, content,
+            {"content-type":
+             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+             "upsert": "true"},
+        )
+    except Exception as e:
+        print(f"[supabase_client] Échec de l'upload de la fiche ({e}).",
+              file=sys.stderr)
+        return None, None
+
+    url = os.environ.get("SUPABASE_URL", "").strip() or \
+        os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").strip()
+    url = url.rstrip("/")
+    docx_path = f"fiches/{storage_name}"
+    docx_url = f"{url}/storage/v1/object/public/{docx_path}"
+    print(f"[supabase_client] Fiche téléversée : {docx_url}", file=sys.stderr)
+    return docx_url, docx_path
+
+
+def fetch_incident_by_tt(client, tt: str):
+    """Retourne la ligne Supabase d'une TT donnée, ou None si absente.
+    La TT est l'identité d'un incident (NEW -> UPDATE... -> END)."""
+    if not tt:
+        return None
+    try:
+        res = client.table("incidents").select("id, etat, is_end").eq("tt", tt).limit(1).execute()
+        rows = res.data or []
+        return rows[0] if rows else None
+    except Exception as e:
+        print(f"[supabase_client] Échec de la lecture par TT ({tt}) : {e}",
+              file=sys.stderr)
+        return None
+
+
+def upsert_incident(incident: dict, fiche: dict = None,
+                    docx_name: str = None, raw_message: str = "",
+                    docx_path_local: str = None):
     """
-    Insère un incident dans Supabase. Retourne True si *tentée* (pas
-    nécessairement réussie), False si désactivé / échec. N'échoue jamais.
+    Insère OU met à jour un incident dans Supabase, selon sa TT.
+    Retourne True si *tentée* (pas nécessairement réussie), False si
+    désactivé / échec. N'échoue jamais.
+
+    Une TT qui revient (UPDATE 01, UPDATE 02, ... END) met à jour la ligne
+    existante au lieu d'en créer une nouvelle : la TT est l'identité.
     """
     client = get_client()
     if client is None:
         return False
 
-    row = _build_row(incident, fiche, docx_name, raw_message)
+    docx_url = docx_path = None
+    if docx_path_local and docx_name:
+        docx_url, docx_path = upload_docx(client, docx_path_local, docx_name)
+
+    row = _build_row(incident, fiche, docx_name, raw_message,
+                     docx_url=docx_url, docx_path=docx_path)
+
     try:
+        existing = fetch_incident_by_tt(client, incident.get("tt"))
+        if existing:
+            client.table("incidents").update(row).eq("id", existing["id"]).execute()
+            print(f"[supabase_client] Incident mis à jour (TT {row.get('tt')}).",
+                  file=sys.stderr)
+            return True
         client.table("incidents").insert(row).execute()
         print(f"[supabase_client] Incident inséré (TT {row.get('tt')}).",
               file=sys.stderr)
         return True
     except Exception as e:
-        print(f"[supabase_client] Échec de l'insertion Supabase ({e}). "
+        print(f"[supabase_client] Échec de l'écriture Supabase ({e}). "
               f"La fiche reste disponible localement.", file=sys.stderr)
         return False
+
+
+def insert_incident(incident: dict, fiche: dict = None,
+                    docx_name: str = None, raw_message: str = "",
+                    docx_path_local: str = None):
+    """Alias rétrocompatible vers upsert_incident()."""
+    return upsert_incident(incident, fiche, docx_name, raw_message,
+                           docx_path_local=docx_path_local)
 
 
 if __name__ == "__main__":

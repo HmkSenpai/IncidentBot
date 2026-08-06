@@ -33,6 +33,8 @@ export type Incident = {
   observations: string | null;
   equipe_intervention: string | null;
   docx_name: string | null;
+  docx_url: string | null;
+  docx_path: string | null;
   raw_message: string | null;
   created_at: string;
   updated_at: string;

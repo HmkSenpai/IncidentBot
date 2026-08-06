@@ -24,7 +24,6 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import generator  # réutilise load_dotenv(), generate_from_block(), etc.
-import supabase_client  # insertion optionnelle des incidents dans Supabase
 
 WEBHOOK_PORT = int(os.environ.get("WEBHOOK_PORT", "5000"))
 TARGET_GROUP_JID = os.environ.get("TARGET_GROUP_JID", "").strip()
@@ -145,18 +144,9 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
         if output_path:
             print(f"[whatsapp.py] Fiche générée: {os.path.basename(output_path)}", file=sys.stderr)
-            # Insertion optionnelle dans Supabase (jamais bloquante).
-            try:
-                incident = generator.parse_incident(text)
-                fiche = generator.map_incident_to_fiche(incident)
-                supabase_client.insert_incident(
-                    incident, fiche,
-                    docx_name=os.path.basename(output_path),
-                    raw_message=text,
-                )
-            except Exception as e:
-                print(f"[whatsapp.py] Erreur lors de l'insert Supabase: {e}",
-                      file=sys.stderr)
+            # L'upsert Supabase (insert par TT + upload de la fiche) est déjà
+            # réalisé dans generator.generate_from_block(). On envoie juste la
+            # fiche sur WhatsApp.
             send_document_to_whatsapp(
                 output_path,
                 caption=f"Fiche générée automatiquement : {os.path.basename(output_path)}"

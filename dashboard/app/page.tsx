@@ -59,6 +59,7 @@ function IncidentTable({ incidents }: { incidents: Incident[] }) {
             <th>Porteur</th>
             <th>Cause</th>
             <th>Créé le</th>
+            <th>Fiche</th>
           </tr>
         </thead>
         <tbody>
@@ -82,11 +83,31 @@ function IncidentTable({ incidents }: { incidents: Incident[] }) {
                 {inc.cause ?? "—"}
               </td>
               <td>{formatDate(inc.created_at)}</td>
+              <td>
+                <DownloadLink incident={inc} />
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function DownloadLink({ incident }: { incident: Incident }) {
+  if (!incident.docx_url) {
+    return <span className={styles.noFiche}>—</span>;
+  }
+  return (
+    <a
+      className={styles.download}
+      href={incident.docx_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      download={incident.docx_name ?? undefined}
+    >
+      Télécharger
+    </a>
   );
 }
 

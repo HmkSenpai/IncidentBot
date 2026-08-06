@@ -141,3 +141,26 @@
   text-align: center;
   color: var(--muted);
 }
+
+.noFiche {
+  color: var(--muted);
+}
+
+.download {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--foreground);
+  background: var(--card);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.download:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

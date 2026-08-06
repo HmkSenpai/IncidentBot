@@ -413,15 +413,17 @@ def generate_from_block(block_text: str):
     filename = build_filename(incident, fiche_fields)
     output_path = os.path.join(OUTPUT_DIR, filename)
     fill_template(fiche_fields, output_path)
-    # Insertion optionnelle dans Supabase (jamais bloquante).
+    # Upsert optionnel dans Supabase (jamais bloquant) : insère si la TT est
+    # nouvelle, sinon met à jour la fiche existante ET la ré-téléverse.
     try:
-        supabase_client.insert_incident(
+        supabase_client.upsert_incident(
             incident, fiche_fields,
             docx_name=filename,
             raw_message=block_text,
+            docx_path_local=output_path,
         )
     except Exception as e:
-        print(f"[generator] Erreur lors de l'insert Supabase: {e}", file=sys.stderr)
+        print(f"[generator] Erreur lors de l'écriture Supabase: {e}", file=sys.stderr)
     return output_path
 
 

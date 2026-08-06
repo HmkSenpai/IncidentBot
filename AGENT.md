@@ -301,40 +301,49 @@ L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
   2) dashboard web ensuite (prévu, non fait), 3) auth/storage à réévaluer
   plus tard.**
 
-### 8.1 Fait : schéma + branchement Supabase
+### 8.1 Fait : schéma + branchement Supabase (+ dédup + stockage fiches)
 
-- `supabase/migrations/0001_incidents.sql` : crée la table `public.incidents`.
-  Colonnes alignées sur `parse_incident()` (champs bruts) + `map_incident_to_fiche()`
-  (champs fiche), plus `commentaires` (jsonb), `raw_message`, `docx_name`,
-  `created_at`, `updated_at`. RLS activé avec policies select/insert (dev mono-
-  utilisateur).
-- `supabase_client.py` : wrapper `insert_incident(incident, fiche, docx_name,
-  raw_message)` utilisant le client officiel `supabase` (supabase-py). **Jamais
-  bloquant** : si `SUPABASE_URL`/clé manque ou si le réseau échoue, il log et
-  renvoie `False` — la génération `.docx` et l'envoi WhatsApp continuent.
-- Branché dans :
-  - `whatsapp.py` : l'insert est déclenché après `generate_from_block()` quand
-    une fiche est produite.
-  - `generator.generate_from_block()` : insère aussi en mode batch
-    (`generator.py incidents/incidents.txt`).
-- **Pour appliquer le schéma au projet :** envoie le contenu de
-  `supabase/migrations/0001_incidents.sql` via le SQL Editor de la console
-  Supabase du projet `wkfzvr...` (ou `supabase db push` avec la CLI pointée
-  sur ce projet). Le fichier seul ne s'exécute pas tout seul.
+- `supabase/migrations/` :
+  - `0001_incidents.sql` : table `public.incidents`. Colonnes alignées sur
+    `parse_incident()` (champs bruts) + `map_incident_to_fiche()` (champs fiche),
+    plus `commentaires` (jsonb), `raw_message`, `docx_name`, `created_at`,
+    `updated_at`. RLS activé avec policies select/insert.
+  - `0002_docx_storage.sql` : bucket Storage public `fiches` + colonnes
+    `docx_url` / `docx_path` sur `incidents` + policy UPDATE.
+  - `0003`/`0004` : policy UPDATE storage avec `using` (nécessaire pour
+    écraser une fiche, sinon 403).
+  - `0005_nettoyage_duplicates.sql` : nettoie les doublons de TT d'un coup.
+  - `0006_storage_delete_policy.sql` : policy DELETE sur storage.objects et
+    incidents.
+- `supabase_client.py` :
+  - `upsert_incident(incident, fiche, docx_name, raw_message, docx_path_local)` :
+    **déduplique par TT** — si la TT existe déjà (messages NEW → UPDATE… → END),
+    la ligne est mise à jour au lieu d'en créer une nouvelle.
+  - `upload_docx()` : téléverse le .docx dans le bucket `fiches` (nom sanitizé
+    espaces→`_`, car les chemins avec espaces cassent le contrôle RLS du bucket)
+    et renvoie `docx_url` / `docx_path` stockés dans la ligne.
+  - **Jamais bloquant** : si clé/URL manquante ou réseau KO, il log et renvoie
+    `False` — la génération `.docx` et l'envoi WhatsApp continuent.
+- Branché dans `generator.generate_from_block()` (même en mode batch
+  `generator.py incidents/incidents.txt`). `whatsapp.py` n'insère **plus**
+  lui-même une fois `generate_from_block()` appelé (évite le double insert).
 
 ### 8.2 Fait : dashboard web (Next.js)
 
 - **`dashboard/`** — application **Next.js 16.3** (App Router, TypeScript) qui lit
   `public.incidents` et affiche : statistiques (total / terminés / en cours /
   sites distincts), et un tableau de l'historique (TT, site, état, début, fin,
-  porteur, cause, date).
+  porteur, cause, date) avec un bouton **Télécharger** par ligne.
+- **Téléchargement des fiches** : chaque « Télécharger » pointe vers `docx_url`
+  (fichier stocké dans le bucket Storage `fiches`) — servi depuis Supabase,
+  pas depuis le PC local.
 - **Sécurité** : les données sont lues via un **Server Component**
   (`lib/incidents.ts` + `lib/supabase.ts`, libellé `server-only`). La clé
   `SUPABASE_SERVICE_ROLE_KEY` reste côté serveur, jamais envoyée au client.
   La page est `force-dynamic` → rendue à chaque requête, pas de pré-render.
 - **Config** : `dashboard/.env.local` = copie des variables Supabase du
   `.env.local` racine (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-  `SUPABASE_SERVICE_ROLE_KEY`). Voir `dashboard/.env.example`. JAMAI commité.
+  `SUPABASE_SERVICE_ROLE_KEY`). Voir `dashboard/.env.example`. JAMAIS commité.
 - **Lancer** : `cd dashboard && npm install && npm run dev` puis ouvrir
   `http://localhost:3000`.
 
@@ -342,14 +351,8 @@ L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
 
 - **Filters / pagination** sur le tableau (site, date, état) et détail d'un
   incident (commentaires, observations, raw_message).
-- **Téléchargement des fiches .docx**.
 - **Auth Supabase** si multi-utilisateurs (actuellement mono-utilisateur,
   l'auteur lui-même).
-- **Stockage des .docx** : Supabase Storage plutôt que le dossier `output/`
-  local, pour survivre aux redémarrages/déploiements.
-- **Déduplication** : les messages `UPDATE` / `END` du même incident (`TT`)
-  devraient mettre à jour la même ligne plutôt que créer un doublon —
-  pas encore traité.
 - Réfléchir à si `whatsapp-bot/bot.js` doit tourner sur un serveur distant
   (VPS) plutôt qu'en local pour une vraie plateforme — implique de repenser
   la persistance de `auth_info/` et la stabilité 24/7 de la session
