@@ -1,11 +1,28 @@
 :root {
-  --background: #f6f7f9;
-  --foreground: #171717;
-  --card: #ffffff;
-  --border: #e3e5e8;
-  --muted: #65707c;
-  --accent: #2563eb;
-  --accent-soft: #eff4ff;
+  --background: #020617;
+  --surface: #0f172a;
+  --surface-2: #161f33;
+  --foreground: #f8fafc;
+  --foreground-muted: #64748b;
+  --border: #1e293b;
+  --border-strong: #334155;
+  --accent: #22c55e;
+  --accent-soft: rgba(34, 197, 94, 0.12);
+  --blue: #3b82f6;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --mono: ui-monospace, SFMono-Regular, "Fira Code", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 html,
@@ -18,6 +35,17 @@ body {
   min-height: 100vh;
   color: var(--foreground);
   background: var(--background);
+  background-image: radial-gradient(
+      1200px 600px at 80% -10%,
+      rgba(59, 130, 246, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 0% -10%,
+      rgba(34, 197, 94, 0.06),
+      transparent 55%
+    );
+  background-attachment: fixed;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
