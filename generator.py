@@ -397,31 +397,42 @@ def build_filename(incident: dict, fiche_fields: dict) -> str:
     return "_".join(parts) + ".docx"
 
 
+def generate_from_block(block_text: str):
+    """
+    Traite UN bloc de texte (un message WhatsApp). Retourne le chemin du
+    fichier généré si c'était un incident, sinon None (message ignoré).
+    Réutilisable aussi bien par le traitement en lot (fichier .txt) que par
+    le webhook temps réel (whatsapp.py).
+    """
+    if not is_real_incident(block_text):
+        return None
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    incident = parse_incident(block_text)
+    fiche_fields = map_incident_to_fiche(incident)
+    filename = build_filename(incident, fiche_fields)
+    output_path = os.path.join(OUTPUT_DIR, filename)
+    fill_template(fiche_fields, output_path)
+    return output_path
+
+
+def generate_from_file(path: str):
+    with open(path, encoding="utf-8") as f:
+        raw_text = f.read()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    count = 0
+    for block in split_incidents(raw_text):
+        output_path = generate_from_block(block)
+        if output_path:
+            print(f"Généré: {os.path.basename(output_path)}")
+            count += 1
+    print(f"\n{count} fiche(s) générée(s) dans {OUTPUT_DIR}/")
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python3 generator.py <fichier_incidents.txt>")
         sys.exit(1)
-
-    path = sys.argv[1]
-    with open(path, encoding="utf-8") as f:
-        raw_text = f.read()
-
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    blocks = split_incidents(raw_text)
-    count = 0
-    for block in blocks:
-        if not is_real_incident(block):
-            continue
-        incident = parse_incident(block)
-        fiche_fields = map_incident_to_fiche(incident)
-        filename = build_filename(incident, fiche_fields)
-        output_path = os.path.join(OUTPUT_DIR, filename)
-        fill_template(fiche_fields, output_path)
-        print(f"Généré: {filename}")
-        count += 1
-
-    print(f"\n{count} fiche(s) générée(s) dans {OUTPUT_DIR}/")
+    generate_from_file(sys.argv[1])
 
 
 if __name__ == "__main__":

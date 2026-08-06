@@ -1,5 +1,23 @@
 .env
 .env.local
+.env (2).local
+
+# secrets & sessions bot — JAMAIS commités
+evolution-api/.env
+evolution-api/auth_info/
+evolution-api/node_modules/
+
+# runtime / générés
 /incidents
+/input
 /templates
 /output
+/IA
+/logs_*.txt
+
+# caches Python
+__pycache__/
+*.pyc
+
+# fichiers volumineux / brouillons
+evolution-api/files.zip
