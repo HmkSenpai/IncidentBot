@@ -339,6 +339,293 @@
   height: 13px;
 }
 
+/* ---- Onglets de filtre ------------------------------------------------ */
+
+.tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+  align-self: flex-start;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  color: var(--ink-strong);
+  background: var(--paper-2);
+}
+
+.tabActive {
+  color: var(--ink-strong);
+  background: var(--paper-2);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tabCount {
+  font-size: 0.7rem;
+  font-family: var(--mono);
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.tabActive .tabCount {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---- Ligne cliquable --------------------------------------------------- */
+
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowClickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ---- Modale (fiche de détail) ----------------------------------------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(23, 21, 18, 0.55);
+  animation: overlayIn 0.15s ease-out;
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ficheDialog {
+  width: 100%;
+  max-width: 620px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: dialogIn 0.18s ease-out;
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ficheHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ficheTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ficheTt {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--ink-strong);
+  margin-right: auto;
+}
+
+.ficheClose {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ficheClose:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.ficheMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.ficheBody {
+  overflow: auto;
+  padding: 20px 24px;
+}
+
+.ficheLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.raw {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--ink-strong);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.ficheFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--rule);
+}
+
+.downloadPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.downloadPrimary:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.downloadPrimary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.downloadPrimary .downloadIcon {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---- Footer / crédits --------------------------------------------------- */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.footerText {
+  letter-spacing: 0.02em;
+}
+
+.footerText strong {
+  color: var(--ink-strong);
+  font-weight: 600;
+}
+
+.footerSep {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rule-strong);
+}
+
+.footerLinks {
+  display: inline-flex;
+  gap: 14px;
+}
+
+.footerLink {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footerLink:hover {
+  color: var(--ink-strong);
+  text-decoration: underline;
+}
+
+.footerLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ---- Empty state ------------------------------------------------------ */
 
 .empty {

@@ -1,28 +1,15 @@
 import { fetchIncidents } from "@/lib/incidents";
-import type { Incident } from "@/lib/types";
+import { FILTERS, filterIncidents, countByStatus, FILTER_TO_STATUS } from "@/lib/status";
+import type { IncidentFilter } from "@/lib/status";
+import IncidentBrowser from "@/components/IncidentBrowser";
 import styles from "./page.module.css";
 
 // Données toujours fraîches à chaque requête : on lit Supabase au moment où le
 // client charge la page, pas lors du build (pas de pré-render statique).
 export const dynamic = "force-dynamic";
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
+// Valeurs de searchParams acceptées pour l'onglet « statut ».
+const VALID_FILTERS: IncidentFilter[] = ["tous", "termines", "encours", "nouveaux"];
 
 // ---- SVG icons (Lucide/Heroicons, pas d'emoji) ---------------------------
 
@@ -89,142 +76,29 @@ function StatCard({
   );
 }
 
-// ---- Badge d'état --------------------------------------------------------
-function stateMeta(inc: Incident): { label: string; kind: "open" | "update" | "end" } {
-  if (inc.is_end) return { label: "END", kind: "end" };
-  const etat = (inc.etat ?? "").trim();
-  if (/update/i.test(etat)) return { label: etat.toUpperCase(), kind: "update" };
-  if (/new/i.test(etat)) return { label: "NEW", kind: "open" };
-  return { label: etat || "EN COURS", kind: "open" };
-}
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ statut?: string }>;
+}) {
+  const { statut } = await searchParams;
+  const filter: IncidentFilter =
+    statut && (VALID_FILTERS as string[]).includes(statut)
+      ? (statut as IncidentFilter)
+      : "tous";
 
-function stateBadge(inc: Incident) {
-  return stateMeta(inc);
-}
-
-// ---- SVG de téléchargement ---------------------------------------------
-function DownloadIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={styles.downloadIcon}
-      aria-hidden="true"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <path d="M7 10l5 5 5-5" />
-      <path d="M12 15V3" />
-    </svg>
-  );
-}
-
-function IncidentTable({ incidents }: { incidents: Incident[] }) {
-  if (incidents.length === 0) {
-    return (
-      <div className={styles.empty}>
-        Aucun incident enregistré pour le moment. Lancez le pipeline
-        (whatsapp.py / generator.py) pour insérer vos premières lignes.
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th className={`${styles.stickyCol} ${styles.stickyFirst}`}>TT</th>
-            <th>Site</th>
-            <th>État</th>
-            <th>Début</th>
-            <th>Fin</th>
-            <th>Porteur</th>
-            <th>Cause</th>
-            <th>Réglé</th>
-            <th className={`${styles.stickyCol} ${styles.stickyLast}`}>Fiche</th>
-          </tr>
-        </thead>
-        <tbody>
-          {incidents.map((inc) => {
-            const badge = stateBadge(inc);
-            return (
-              <tr key={inc.id}>
-                <td
-                  className={`${styles.mono} ${styles.stickyCol} ${styles.stickyFirst}`}
-                >
-                  {inc.tt ?? "—"}
-                </td>
-                <td className={styles.strong}>{inc.site ?? "—"}</td>
-                <td>
-                  <span
-                    className={`${styles.badge} ${styles[`badge${badge.kind}`]}`}
-                  >
-                    {badge.label}
-                  </span>
-                </td>
-                <td>
-                  <div className={styles.dateCell}>{formatDate(inc.debut)}</div>
-                  <div className={styles.timeCell}>{formatTime(inc.debut)}</div>
-                </td>
-                <td>
-                  <div className={styles.dateCell}>{formatDate(inc.fin)}</div>
-                  <div className={styles.timeCell}>{formatTime(inc.fin)}</div>
-                </td>
-                <td>{inc.porteur ?? "—"}</td>
-                <td className={styles.truncate} title={inc.cause ?? ""}>
-                  {inc.cause ?? "—"}
-                </td>
-                <td>
-                  {inc.is_end ? (
-                    <span className={styles.isEnd}>✓</span>
-                  ) : (
-                    <span className={styles.isOpen}>●</span>
-                  )}
-                </td>
-                <td
-                  className={`${styles.stickyCol} ${styles.stickyLast} ${styles.actionsCell}`}
-                >
-                  <DownloadLink incident={inc} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function DownloadLink({ incident }: { incident: Incident }) {
-  if (!incident.docx_url) {
-    return <span className={styles.noFiche}>—</span>;
-  }
-  return (
-    <a
-      className={styles.download}
-      href={incident.docx_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      download={incident.docx_name ?? undefined}
-      title={`Télécharger ${incident.docx_name ?? "la fiche"}`}
-    >
-      <DownloadIcon />
-      <span>Fiche</span>
-    </a>
-  );
-}
-
-export default async function Home() {
   const incidents = await fetchIncidents();
 
-  const total = incidents.length;
-  const ended = incidents.filter((i) => i.is_end).length;
-  const open = total - ended;
+  const counts = countByStatus(incidents);
+  const total = counts.tous;
+  const ended = counts.end;
+  const open = counts.open;
   const sites = new Set(incidents.map((i) => i.site).filter(Boolean)).size;
+
+  const filtered = filterIncidents(incidents, filter);
+
+  const tabCount = (f: (typeof FILTERS)[number]["value"]) =>
+    f === "tous" ? counts.tous : counts[FILTER_TO_STATUS[f]];
 
   return (
     <main className={styles.page}>
@@ -269,10 +143,53 @@ export default async function Home() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Historique des incidents</h2>
-          <span className={styles.count}>{total} ligne(s)</span>
+          <span className={styles.count}>{filtered.length} ligne(s)</span>
         </div>
-        <IncidentTable incidents={incidents} />
+
+        <nav className={styles.tabs} aria-label="Filtrer par état">
+          {FILTERS.map((f) => {
+            const active = filter === f.value;
+            return (
+              <a
+                key={f.value}
+                href={`?statut=${f.value}`}
+                aria-current={active ? "page" : undefined}
+                className={`${styles.tab} ${active ? styles.tabActive : ""}`}
+              >
+                {f.label}
+                <span className={styles.tabCount}>{tabCount(f.value)}</span>
+              </a>
+            );
+          })}
+        </nav>
+
+        <IncidentBrowser incidents={filtered} />
       </section>
+
+      <footer className={styles.footer}>
+        <span className={styles.footerText}>
+          Réalisé par <strong>Hmksenpai</strong>
+        </span>
+        <span className={styles.footerSep} aria-hidden="true" />
+        <nav className={styles.footerLinks} aria-label="À propos du créateur">
+          <a
+            href="https://cloudfoliooo.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            Portfolio
+          </a>
+          <a
+            href="https://github.com/HmkSenpai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            GitHub
+          </a>
+        </nav>
+      </footer>
     </main>
   );
 }
