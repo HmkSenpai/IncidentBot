@@ -1,0 +1,39 @@
+export type Commentaire = {
+  date?: string | null;
+  text?: string | null;
+};
+
+export type Incident = {
+  id: string;
+  tt: string | null;
+  etat: string | null;
+  is_end: boolean;
+  debut: string | null;
+  recu: string | null;
+  fin: string | null;
+  description: string | null;
+  impact: string | null;
+  cause: string | null;
+  actions_menee: string | null;
+  priorite: string | null;
+  porteur: string | null;
+  rfo: string | null;
+  commentaires: Commentaire[];
+  etablissement: string | null;
+  site: string | null;
+  localisation: string | null;
+  date_incident: string | null;
+  date_information: string | null;
+  date_depart_terrain: string | null;
+  clients_impactes: string | null;
+  description_travaux: string | null;
+  date_debut_intervention: string | null;
+  date_retablissement: string | null;
+  date_fin_intervention: string | null;
+  observations: string | null;
+  equipe_intervention: string | null;
+  docx_name: string | null;
+  raw_message: string | null;
+  created_at: string;
+  updated_at: string;
+};

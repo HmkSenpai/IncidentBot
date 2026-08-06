@@ -1,11 +1,13 @@
+# secrets — JAMAIS commités
 .env
-.env.local
-.env (2).local
+.env.*
+!env.example
 
-# secrets & sessions bot — JAMAIS commités
-evolution-api/.env
-evolution-api/auth_info/
-evolution-api/node_modules/
+# sessions & dépendances bot WhatsApp
+whatsapp-bot/auth_info/
+whatsapp-bot/node_modules/
+whatsapp-bot/.env
+creds.json
 
 # runtime / générés
 /incidents
@@ -16,8 +18,8 @@ evolution-api/node_modules/
 /logs_*.txt
 
 # caches Python
-/__pycache__/
+__pycache__/
 *.pyc
 
-# fichiers volumineux / brouillons
-evolution-api/files.zip
+# dossiers supabase / node locaux
+supabase/.temp

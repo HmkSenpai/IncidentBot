@@ -93,11 +93,14 @@ IncidentBot/
 ├── incidents/
 │   └── incidents.txt           jeu de données de test (12 incidents réels)
 ├── output/                     fiches .docx générées (créé au runtime)
-├── evolution-api/             ⚠️ C'est ICI qu'est le bot (ancien nom whatsapp-bot)
+├── whatsapp-bot/                le bot WhatsApp (Baileys) — anciennement evolution-api/
 │   ├── package.json
 │   ├── bot.js                  — connexion WhatsApp (Baileys) + envoi de docs
-│   ├── docker-compose.yml      ABANDONNÉ, gardé pour historique seulement
 │   └── auth_info/              session WhatsApp persistée (JAMAIS commité)
+├── supabase_client.py           insertion optionnelle des incidents dans Supabase
+└── supabase/
+    └── migrations/
+        └── 0001_incidents.sql  schéma de la table `public.incidents`
 ```
 
 ## 5. Détail de chaque composant
@@ -203,7 +206,7 @@ du texte dans la console — sert à identifier le bon groupe avant de figer la
 config. Ne pas retirer ce comportement, il a été ajouté exprès après une
 itération où l'utilisateur avait plusieurs groupes candidats.
 
-### 5.5 `bot.js` (dans `evolution-api/`)
+### 5.5 `bot.js` (dans `whatsapp-bot/`)
 
 Connexion Baileys (`useMultiFileAuthState`, session dans `auth_info/`). Au
 premier lancement, affiche un QR code ASCII dans le terminal à scanner.
@@ -218,12 +221,12 @@ Deux rôles dans le même process :
    `POST /send-document`, envoie un document WhatsApp via
    `sock.sendMessage(jid, {document, fileName, mimetype, caption})`.
 
-### 5.6 `evolution-api/`
+### 5.6 Note historique `evolution-api/`
 
-**Abandonné.** Gardé uniquement pour trace historique de la première
-tentative. Ne pas repartir de là sauf si Baileys direct pose un problème
-bloquant qui justifierait de réessayer une version plus récente d'Evolution
-API.
+L'ancienne piste "E volution API" (Docker + Postgres + Redis) a été **abandonnée**
+et le dossier a depuis été renommé/absorbé dans `whatsapp-bot/`. Ne pas recréer
+un dossier `evolution-api/` : le bot Baileys en direct (`whatsapp-bot/bot.js`)
+est la solution retenue.
 
 ## 6. Configuration (`.env.local`)
 
@@ -280,53 +283,82 @@ python3 generator.py incidents/incidents.txt
 
 ## 8. Roadmap — vision plateforme (EN COURS)
 
-> **⚠️ NOTE RENOMMAGE (à ne pas casser) :** Le document parle de
-> `whatsapp-bot/bot.js`, mais le dossier s'appelle encore **`evolution-api/`**
-> (non renommé par l'auteur pour ne pas casser l'historique). Le script réel
-> est donc `evolution-api/bot.js`, avec `evolution-api/auth_info/` pour la
-> session. Partout où ce document dit `whatsapp-bot/`, lire `evolution-api/`.
-> NE PAS créer un dossier `whatsapp-bot/` en plus.
+> **Renommage acté :** le dossier du bot s'appelle désormais **`whatsapp-bot/`**
+> (plus d'`evolution-api/`). Si un ancien commit/doc parle d'`evolution-api/`,
+> lire `whatsapp-bot/`. **Ne pas** recréer de dossier `evolution-api/`.
 
 L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
 **Décisions actées avec l'utilisateur :**
 
 - **Base cible = le projet Supabase de `.env.local`** (ref `wkfzvr...`,
-  URL `https://wkfzvrrcmznysaqovics.supabase.co`). ⚠️ Le serveur MCP Supabase
-  actuellement connecté pointe sur un AUTRE projet (jeu de matchmaking avec
+  URL `https://wkfzvrrcmznysaqovics.supabase.co`). ⚠️ Attention : certains
+  serveurs MCP Supabase pointent sur un AUTRE projet (jeu de matchmaking avec
   tables `users, matches, submissions, matchmaking_queue, friend_requests,
   scenario_templates, challenges`) — ne PAS y créer le schéma incidents.
   Toute migration/schéma doit aller vers le projet `.env.local`
   (`NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`).
-- **Ordre de construction : 1) DB + migration `incidents` d'abord, 2)
-  dashboard web ensuite, 3) auth/storage à réévaluer plus tard.**
+- **Ordre de construction : 1) DB + migration `incidents` d'abord ✅ (fait),
+  2) dashboard web ensuite (prévu, non fait), 3) auth/storage à réévaluer
+  plus tard.**
 
-Pistes encore ouvertes (à confirmer avant de coder) :
+### 8.1 Fait : schéma + branchement Supabase
 
-- **Base de données Supabase (Postgres)** : stocker chaque incident parsé
-  (au lieu de/en plus des fichiers `.docx`) — table `incidents` avec les
-  champs déjà définis dans `parse_incident()`, plus les champs mappés de
-  `map_incident_to_fiche()`. Utiliser Supabase migrations pour le schéma.
-- **Dashboard web** : historique des incidents, filtres par site/date/état,
-  téléchargement des fiches, éventuellement statistiques (temps moyen de
-  résolution, sites les plus touchés...).
+- `supabase/migrations/0001_incidents.sql` : crée la table `public.incidents`.
+  Colonnes alignées sur `parse_incident()` (champs bruts) + `map_incident_to_fiche()`
+  (champs fiche), plus `commentaires` (jsonb), `raw_message`, `docx_name`,
+  `created_at`, `updated_at`. RLS activé avec policies select/insert (dev mono-
+  utilisateur).
+- `supabase_client.py` : wrapper `insert_incident(incident, fiche, docx_name,
+  raw_message)` utilisant le client officiel `supabase` (supabase-py). **Jamais
+  bloquant** : si `SUPABASE_URL`/clé manque ou si le réseau échoue, il log et
+  renvoie `False` — la génération `.docx` et l'envoi WhatsApp continuent.
+- Branché dans :
+  - `whatsapp.py` : l'insert est déclenché après `generate_from_block()` quand
+    une fiche est produite.
+  - `generator.generate_from_block()` : insère aussi en mode batch
+    (`generator.py incidents/incidents.txt`).
+- **Pour appliquer le schéma au projet :** envoie le contenu de
+  `supabase/migrations/0001_incidents.sql` via le SQL Editor de la console
+  Supabase du projet `wkfzvr...` (ou `supabase db push` avec la CLI pointée
+  sur ce projet). Le fichier seul ne s'exécute pas tout seul.
+
+### 8.2 Fait : dashboard web (Next.js)
+
+- **`dashboard/`** — application **Next.js 16.3** (App Router, TypeScript) qui lit
+  `public.incidents` et affiche : statistiques (total / terminés / en cours /
+  sites distincts), et un tableau de l'historique (TT, site, état, début, fin,
+  porteur, cause, date).
+- **Sécurité** : les données sont lues via un **Server Component**
+  (`lib/incidents.ts` + `lib/supabase.ts`, libellé `server-only`). La clé
+  `SUPABASE_SERVICE_ROLE_KEY` reste côté serveur, jamais envoyée au client.
+  La page est `force-dynamic` → rendue à chaque requête, pas de pré-render.
+- **Config** : `dashboard/.env.local` = copie des variables Supabase du
+  `.env.local` racine (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY`). Voir `dashboard/.env.example`. JAMAI commité.
+- **Lancer** : `cd dashboard && npm install && npm run dev` puis ouvrir
+  `http://localhost:3000`.
+
+### 8.3 À venir
+
+- **Filters / pagination** sur le tableau (site, date, état) et détail d'un
+  incident (commentaires, observations, raw_message).
+- **Téléchargement des fiches .docx**.
 - **Auth Supabase** si multi-utilisateurs (actuellement mono-utilisateur,
   l'auteur lui-même).
 - **Stockage des .docx** : Supabase Storage plutôt que le dossier `output/`
   local, pour survivre aux redémarrages/déploiements.
-- Le pipeline `parser.py` → `generator.py` peut rester quasi tel quel : il
-  suffit de brancher un insert Supabase après `generate_from_block()`,
-  plutôt que de tout réécrire.
+- **Déduplication** : les messages `UPDATE` / `END` du même incident (`TT`)
+  devraient mettre à jour la même ligne plutôt que créer un doublon —
+  pas encore traité.
 - Réfléchir à si `whatsapp-bot/bot.js` doit tourner sur un serveur distant
   (VPS) plutôt qu'en local pour une vraie plateforme — implique de repenser
   la persistance de `auth_info/` et la stabilité 24/7 de la session
   WhatsApp (voir risques de ban, §3, qui deviennent plus importants avec un
   usage prolongé/continu).
 
-**Avant de coder la plateforme :** clarifier avec l'utilisateur le partage
-exact des priorités (dashboard d'abord ? DB d'abord ? auth nécessaire tout
-de suite ?) plutôt que de tout construire d'un coup — c'est l'approche qui a
-bien fonctionné jusqu'ici (parser → générateur → WhatsApp → envoi, une
-brique validée à la fois avant de passer à la suivante).
+**Méthode éprouvée :** construire une brique à la fois et la valider avant de
+passer à la suivante (parser → générateur → WhatsApp → envoi → Supabase →
+dashboard).
 
 ## 9. Ce qui a déjà été testé et validé
 

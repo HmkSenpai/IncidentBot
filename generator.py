@@ -20,6 +20,7 @@ import urllib.error
 from datetime import datetime
 
 from parser import split_incidents, is_real_incident, parse_incident
+import supabase_client  # insertion optionnelle des incidents dans Supabase
 
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "fiche_template.docx")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
@@ -412,6 +413,15 @@ def generate_from_block(block_text: str):
     filename = build_filename(incident, fiche_fields)
     output_path = os.path.join(OUTPUT_DIR, filename)
     fill_template(fiche_fields, output_path)
+    # Insertion optionnelle dans Supabase (jamais bloquante).
+    try:
+        supabase_client.insert_incident(
+            incident, fiche_fields,
+            docx_name=filename,
+            raw_message=block_text,
+        )
+    except Exception as e:
+        print(f"[generator] Erreur lors de l'insert Supabase: {e}", file=sys.stderr)
     return output_path
 
 
