@@ -286,7 +286,7 @@ python3 generator.py incidents/incidents.txt
 > **Renommage acté :** le dossier du bot s'appelle désormais **`whatsapp-bot/`**
 > (plus d'`evolution-api/`). Si un ancien commit/doc parle d'`evolution-api/`,
 > lire `whatsapp-bot/`. **Ne pas** recréer de dossier `evolution-api/`.
-
+>Utilise toujours - au lieu de —
 L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
 **Décisions actées avec l'utilisateur :**
 

@@ -16,7 +16,7 @@ export default async function Home() {
           <div className={styles.eyebrow}>Camtel · Maroua</div>
           <h1 className={styles.title}>Incidents Mobile</h1>
           <p className={styles.subtitle}>
-            Fiches de relevé générées depuis WhatsApp — stockées dans Supabase
+            Fiches de relevé générées depuis WhatsApp - stockées dans Supabase
           </p>
         </div>
         <div className={styles.updated}>
