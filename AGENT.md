@@ -84,6 +84,7 @@ WhatsApp Web). Ce n'est PAS l'API Business officielle de Meta.
 ```
 IncidentBot/
 ├── AGENT.md                    ce fichier
+├── LICENSE                     MIT © Hmksenpai 2026 (repo public)
 ├── parser.py                   extraction regex des messages bruts → JSON
 ├── generator.py                mapping JSON → champs fiche + remplissage docx
 ├── whatsapp.py                 serveur webhook local (reçoit depuis bot.js)
@@ -98,9 +99,11 @@ IncidentBot/
 │   ├── bot.js                  - connexion WhatsApp (Baileys) + envoi de docs
 │   └── auth_info/              session WhatsApp persistée (JAMAIS commité)
 ├── supabase_client.py           insertion optionnelle des incidents dans Supabase
-└── supabase/
-    └── migrations/
-        └── 0001_incidents.sql  schéma de la table `public.incidents`
+├── supabase/
+│   └── migrations/
+│       └── 0001_incidents.sql  schéma de la table `public.incidents`
+├── dashboard/                  app Next.js (voir §8.2) - sous-dossier du repo
+└── cleanup_supabase.py         utilitaire temporaire de purge (tests) - non commité
 ```
 
 ## 5. Détail de chaque composant
@@ -332,25 +335,44 @@ L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
 
 - **`dashboard/`** - application **Next.js 16.3** (App Router, TypeScript) qui lit
   `public.incidents` et affiche : statistiques (total / terminés / en cours /
-  sites distincts), et un tableau de l'historique (TT, site, état, début, fin,
-  porteur, cause, date) avec un bouton **Télécharger** par ligne.
-- **Téléchargement des fiches** : chaque « Télécharger » pointe vers `docx_url`
-  (fichier stocké dans le bucket Storage `fiches`) - servi depuis Supabase,
-  pas depuis le PC local.
-- **Sécurité** : les données sont lues via un **Server Component**
-  (`lib/incidents.ts` + `lib/supabase.ts`, libellé `server-only`). La clé
-  `SUPABASE_SERVICE_ROLE_KEY` reste côté serveur, jamais envoyée au client.
-  La page est `force-dynamic` → rendue à chaque requête, pas de pré-render.
+  sites distincts), un tableau de l'historique (TT, site, état, début, fin,
+  porteur, cause, date) et un bouton **Télécharger** par ligne.
+- **Mode « En direct » (polling)** : le tableau se rafraîchit tout seul sans
+  recharger la page. `app/page.tsx` (Server Component, `force-dynamic`) ne
+  charge que les données initiales et rend `<LiveDashboard initial={...}>` ;
+  en client, `components/LiveDashboard.tsx` **poll toutes les 6 s** l'endpoint
+  `app/api/incidents/route.ts` (`GET /api/incidents`, réutilise `fetchIncidents`,
+  `dynamic = "force-dynamic"`) et remplace les données en mémoire - stats,
+  onglets, tableau et modale réagissent. `components/IncidentBrowser.tsx` a été
+  absorbé dans `LiveDashboard` et supprimé.
+- **Tri / onglets par état** : filtre client (`useState`) Toutes / Terminés /
+  En cours, avec compteur par onglet.
+- **Modale de détail** : cliquer une ligne ouvre une modale affichant
+  `raw_message` dans un `<pre>` (retours ligne conservés) + bouton
+  **Télécharger la fiche** (pointe vers `docx_url`) ; fermeture ✕ / Échap /
+  clic sur le fond.
+- **Footer crédits** : « Réalisé par Hmksenpai » + liens Portfolio/GitHub.
+- **Téléchargement des certificats** : chaque « Télécharger » pointe vers
+  `docx_url` (fichier stocké dans le bucket Storage `fiches`) - servi depuis
+  Supabase, pas depuis le PC local.
+- **Sécurité** : lecture initiale côté **Server Component**
+  (`lib/incidents.ts` + `lib/supabase.ts`, libellé `server-only`) ; le polling
+  passe par `/api/incidents` (appelé par le client) pour ne jamais exposer la
+  clé `SUPABASE_SERVICE_ROLE_KEY`, qui reste côté serveur. Pages/route
+  `force-dynamic` → rendues à chaque requête, pas de pré-rendu.
 - **Config** : `dashboard/.env.local` = copie des variables Supabase du
   `.env.local` racine (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
   `SUPABASE_SERVICE_ROLE_KEY`). Voir `dashboard/.env.example`. JAMAIS commité.
+- **Déploiement Vercel** : quand le dashboard est dans un sous-dossier
+  `dashboard/` du repo, il faut **Root Directory = `dashboard/`** (sinon Vercel
+  build dans la racine Python → 404) et définir les 3 variables Supabase dans
+  Settings → Environment Variables (**Vercel n'utilise pas `.env.local`**).
 - **Lancer** : `cd dashboard && npm install && npm run dev` puis ouvrir
   `http://localhost:3000`.
 
 ### 8.3 À venir
 
-- **Filters / pagination** sur le tableau (site, date, état) et détail d'un
-  incident (commentaires, observations, raw_message).
+- **Pagination** sur le tableau (site, date, état) si le volume devient grand.
 - **Auth Supabase** si multi-utilisateurs (actuellement mono-utilisateur,
   l'auteur lui-même).
 - Réfléchir à si `whatsapp-bot/bot.js` doit tourner sur un serveur distant
