@@ -64,7 +64,7 @@ def get_client():
         os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "").strip()
 
     if not url or not key:
-        print("[supabase_client] SUPABASE_URL ou clé manquante — stockage "
+        print("[supabase_client] SUPABASE_URL ou clé manquante - stockage "
               "Supabase désactivé.", file=sys.stderr)
         return None
 

@@ -9,7 +9,7 @@
 // Lancement :
 //   npm start
 //
-// Au premier lancement, un QR code s'affiche dans ce terminal — scannez-le
+// Au premier lancement, un QR code s'affiche dans ce terminal - scannez-le
 // avec WhatsApp (Paramètres > Appareils connectés > Connecter un appareil).
 // La session est ensuite sauvegardée localement (dossier auth_info/), plus
 // besoin de rescanner aux lancements suivants.
@@ -104,7 +104,7 @@ async function startBot() {
   });
 
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    console.log(`[bot.js] messages.upsert reçu — type=${type}, count=${messages.length}`);
+    console.log(`[bot.js] messages.upsert reçu - type=${type}, count=${messages.length}`);
     if (type !== "notify") {
       console.log(`[bot.js] Ignoré (type != "notify")`);
       return;

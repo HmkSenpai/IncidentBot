@@ -1,8 +1,8 @@
-# AGENT.md — IncidentBot CAMTEL
+# AGENT.md - IncidentBot CAMTEL
 
 Documentation de contexte pour tout agent IA (Claude Code, Cursor, etc.) qui
 reprendrait ce projet. Lis ce fichier en entier avant de modifier quoi que ce
-soit — plusieurs décisions ne sont pas évidentes en lisant juste le code.
+soit - plusieurs décisions ne sont pas évidentes en lisant juste le code.
 
 ## 1. Objectif du projet
 
@@ -14,7 +14,7 @@ Mobile" de CAMTEL (Yaoundé, Cameroun), remplie manuellement par l'auteur
 détecter automatiquement les nouveaux messages d'incident dans le groupe
 WhatsApp, ignorer le bruit ("Bien reçu", discussions...), extraire les
 champs, remplir un document Word à partir d'un template figé, et renvoyer
-la fiche générée — sans intervention humaine.
+la fiche générée - sans intervention humaine.
 
 **Vision à moyen terme (pas encore commencée) :** transformer ce script
 personnel en une vraie petite plateforme (dashboard web, base de données
@@ -28,11 +28,11 @@ pendant la migration.
 WhatsApp (groupe incidents)
         │
         ▼
-whatsapp-bot/bot.js  (Node.js + Baileys — connexion WhatsApp Web directe,
+whatsapp-bot/bot.js  (Node.js + Baileys - connexion WhatsApp Web directe,
         │             PAS d'API officielle, PAS de Docker)
         │  POST http://localhost:5000/webhook
         ▼
-whatsapp.py  (Python stdlib, serveur HTTP local — filtre par groupe,
+whatsapp.py  (Python stdlib, serveur HTTP local - filtre par groupe,
         │     déclenche la génération)
         │  appelle generator.generate_from_block(text)
         ▼
@@ -45,7 +45,7 @@ output/*.docx  (une fiche par incident)
         │  POST http://localhost:5001/send-document
         ▼
 whatsapp-bot/bot.js  (même process Node, renvoie le .docx sur WhatsApp
-                       vers REPORT_TARGET_JID — généralement soi-même)
+                       vers REPORT_TARGET_JID - généralement soi-même)
 ```
 
 **Pourquoi cette architecture et pas Evolution API / Docker :**
@@ -53,12 +53,12 @@ On a commencé avec Evolution API (Docker + Postgres + Redis), qui a causé
 une boucle infinie de reconnexion (bug connu, voir issue GitHub
 EvolutionAPI/evolution-api#2437) et a fait crasher la machine par
 surconsommation de ressources. Evolution API est conçu pour du multi-tenant
-SaaS — complètement surdimensionné pour un seul utilisateur/une seule
+SaaS - complètement surdimensionné pour un seul utilisateur/une seule
 instance. On est descendu directement sur **Baileys**, la librairie que
 Evolution API utilise en interne, sans toute la couche infra autour. Plus
 léger, zéro Docker, session persistée localement dans `auth_info/`.
 
-## 3. ⚠️ Risque de ban WhatsApp — À NE PAS OUBLIER
+## 3. ⚠️ Risque de ban WhatsApp - À NE PAS OUBLIER
 
 Baileys est un client **non officiel** (reverse-engineering du protocole
 WhatsApp Web). Ce n'est PAS l'API Business officielle de Meta.
@@ -77,7 +77,7 @@ WhatsApp Web). Ce n'est PAS l'API Business officielle de Meta.
      Telegram (API officielle, zéro risque)
 - **Ne pas** ajouter de fonctionnalités qui augmentent le volume de messages
   envoyés ou qui contactent des numéros inconnus sans en discuter d'abord
-  avec l'utilisateur — ça change le profil de risque.
+  avec l'utilisateur - ça change le profil de risque.
 
 ## 4. Fichiers du projet
 
@@ -93,9 +93,9 @@ IncidentBot/
 ├── incidents/
 │   └── incidents.txt           jeu de données de test (12 incidents réels)
 ├── output/                     fiches .docx générées (créé au runtime)
-├── whatsapp-bot/                le bot WhatsApp (Baileys) — anciennement evolution-api/
+├── whatsapp-bot/                le bot WhatsApp (Baileys) - anciennement evolution-api/
 │   ├── package.json
-│   ├── bot.js                  — connexion WhatsApp (Baileys) + envoi de docs
+│   ├── bot.js                  - connexion WhatsApp (Baileys) + envoi de docs
 │   └── auth_info/              session WhatsApp persistée (JAMAIS commité)
 ├── supabase_client.py           insertion optionnelle des incidents dans Supabase
 └── supabase/
@@ -124,12 +124,12 @@ ignoré silencieusement.
 ### 5.2 `generator.py`
 
 **Mapping des champs (règles métier, à ne pas modifier sans valider avec
-l'utilisateur — chaque règle vient d'exemples réels qu'il a fournis) :**
+l'utilisateur - chaque règle vient d'exemples réels qu'il a fournis) :**
 
 | Champ fiche | Règle |
 |---|---|
 | `ETABLISSEMENT` | Extrait de `PORTEUR`. `CMRF / CTT X` ou `CTT X` → `CTT X`. `CMRF X` (sans CTT) → `CTT X`. |
-| `SITE` | Extrait de `DESCRIPTION` (format `CODE_NOM[_MARQUEUR] DOWN`). On retire `DOWN`, on retire le code du 1er segment, on retire un marqueur technique connu en fin (`IHS`, `CRTV` — liste dans `KNOWN_SITE_SUFFIXES`, à étendre si de nouveaux marqueurs apparaissent). |
+| `SITE` | Extrait de `DESCRIPTION` (format `CODE_NOM[_MARQUEUR] DOWN`). On retire `DOWN`, on retire le code du 1er segment, on retire un marqueur technique connu en fin (`IHS`, `CRTV` - liste dans `KNOWN_SITE_SUFFIXES`, à étendre si de nouveaux marqueurs apparaissent). |
 | `LOCALISATION` | La `DESCRIPTION` brute, telle quelle (pas la version nettoyée du SITE). |
 | `DATE_INCIDENT` / `DATE_INFORMATION` | `DEBUT` / `REÇU` directement. |
 | `DATE_DEPART_TERRAIN` | Toujours `"En attente"` (jamais dispo dans les messages sources). |
@@ -145,7 +145,7 @@ l'utilisateur — chaque règle vient d'exemples réels qu'il a fournis) :**
 > affiche toujours `"Investigation en cours"`, même si le message source
 > contient déjà une cause plausible (ex: `"Coupure d'énergie électrique"`
 > sur un `UPDATE`). C'est un choix délibéré pour rester strictement
-> déterministe, mais l'utilisateur pourrait vouloir revenir dessus — si un
+> déterministe, mais l'utilisateur pourrait vouloir revenir dessus - si un
 > futur agent voit cette règle remise en question, c'est le contexte.
 
 #### 5.2.1 Polish IA optionnel (`call_llm` / `polish_with_ai`)
@@ -155,11 +155,11 @@ incidents `END`) peuvent être reformulés par un LLM externe pour un rendu
 plus professionnel (le texte source est parfois TOUT EN MAJUSCULES, sans
 ponctuation soignée). **Entièrement optionnel** : si aucune clé API n'est
 configurée, le script utilise une version déterministe (concaténation +
-capitalisation basique) — zéro dépendance externe obligatoire.
+capitalisation basique) - zéro dépendance externe obligatoire.
 
 Fournisseurs supportés, abstraction dans `PROVIDERS` (dict) :
-- **DeepSeek** (`DEEPSEEK_API_KEY`) — payant mais très bon marché
-- **OpenRouter** (`OPENROUTER_API_KEY`) — permet des modèles gratuits
+- **DeepSeek** (`DEEPSEEK_API_KEY`) - payant mais très bon marché
+- **OpenRouter** (`OPENROUTER_API_KEY`) - permet des modèles gratuits
   (`:free`), catalogue changeant, vérifier le slug exact sur
   openrouter.ai/models avant de configurer `OPENROUTER_MODEL`
 
@@ -167,7 +167,7 @@ Sélection auto via `get_active_provider()` : `AI_PROVIDER` si forcé, sinon
 première clé trouvée. En cas d'échec réseau/timeout/réponse vide (fréquent
 avec les modèles "reasoning" gratuits qui consomment leur budget de tokens
 en réflexion interne sans laisser de place à la réponse), repli automatique
-sur la version déterministe — **ne doit jamais faire planter la
+sur la version déterministe - **ne doit jamais faire planter la
 génération**.
 
 ### 5.3 `templates/fiche_template.docx`
@@ -202,7 +202,7 @@ filtre par `TARGET_GROUP_JID`, ignore les messages `fromMe`, appelle
 
 **Mode debug intégré :** si `TARGET_GROUP_JID` n'est pas configuré, chaque
 message reçu (y compris les vôtres) affiche son JID + nom de groupe + aperçu
-du texte dans la console — sert à identifier le bon groupe avant de figer la
+du texte dans la console - sert à identifier le bon groupe avant de figer la
 config. Ne pas retirer ce comportement, il a été ajouté exprès après une
 itération où l'utilisateur avait plusieurs groupes candidats.
 
@@ -231,10 +231,10 @@ est la solution retenue.
 ## 6. Configuration (`.env.local`)
 
 Chargé automatiquement par `generator.py` (`load_dotenv()`, stdlib only,
-sans écraser des variables déjà exportées dans le shell) — **doit être à la
+sans écraser des variables déjà exportées dans le shell) - **doit être à la
 racine d'`IncidentBot/`**, au même niveau que `generator.py` et
 `whatsapp.py`. `whatsapp-bot/bot.js` lit ses propres variables via
-`process.env` (pas de `.env.local` séparé pour Node actuellement — à
+`process.env` (pas de `.env.local` séparé pour Node actuellement - à
 uniformiser si ça devient pénible).
 
 ```env
@@ -254,7 +254,7 @@ AI_TIMEOUT_SECONDS=45                      # augmenter si modèles gratuits lent
 ```
 
 **JAMAIS commiter `.env.local` ni `whatsapp-bot/auth_info/`** (session
-WhatsApp) — ajouter les deux à `.gitignore` avant tout `git init`/push, ça
+WhatsApp) - ajouter les deux à `.gitignore` avant tout `git init`/push, ça
 n'a pas encore été fait explicitement.
 
 ## 7. Comment lancer le projet (état actuel)
@@ -262,11 +262,11 @@ n'a pas encore été fait explicitement.
 Trois process séparés, dans cet ordre :
 
 ```bash
-# Terminal 1 — génération/webhook
+# Terminal 1 - génération/webhook
 cd IncidentBot
 python3 whatsapp.py
 
-# Terminal 2 — connexion WhatsApp
+# Terminal 2 - connexion WhatsApp
 cd IncidentBot/whatsapp-bot
 npm install   # une seule fois
 npm start
@@ -281,7 +281,7 @@ Test en lot hors WhatsApp (sur le fichier `incidents/incidents.txt`) :
 python3 generator.py incidents/incidents.txt
 ```
 
-## 8. Roadmap — vision plateforme (EN COURS)
+## 8. Roadmap - vision plateforme (EN COURS)
 
 > **Renommage acté :** le dossier du bot s'appelle désormais **`whatsapp-bot/`**
 > (plus d'`evolution-api/`). Si un ancien commit/doc parle d'`evolution-api/`,
@@ -294,7 +294,7 @@ L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
   URL `https://wkfzvrrcmznysaqovics.supabase.co`). ⚠️ Attention : certains
   serveurs MCP Supabase pointent sur un AUTRE projet (jeu de matchmaking avec
   tables `users, matches, submissions, matchmaking_queue, friend_requests,
-  scenario_templates, challenges`) — ne PAS y créer le schéma incidents.
+  scenario_templates, challenges`) - ne PAS y créer le schéma incidents.
   Toute migration/schéma doit aller vers le projet `.env.local`
   (`NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`).
 - **Ordre de construction : 1) DB + migration `incidents` d'abord ✅ (fait),
@@ -317,25 +317,25 @@ L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
     incidents.
 - `supabase_client.py` :
   - `upsert_incident(incident, fiche, docx_name, raw_message, docx_path_local)` :
-    **déduplique par TT** — si la TT existe déjà (messages NEW → UPDATE… → END),
+    **déduplique par TT** - si la TT existe déjà (messages NEW → UPDATE… → END),
     la ligne est mise à jour au lieu d'en créer une nouvelle.
   - `upload_docx()` : téléverse le .docx dans le bucket `fiches` (nom sanitizé
     espaces→`_`, car les chemins avec espaces cassent le contrôle RLS du bucket)
     et renvoie `docx_url` / `docx_path` stockés dans la ligne.
   - **Jamais bloquant** : si clé/URL manquante ou réseau KO, il log et renvoie
-    `False` — la génération `.docx` et l'envoi WhatsApp continuent.
+    `False` - la génération `.docx` et l'envoi WhatsApp continuent.
 - Branché dans `generator.generate_from_block()` (même en mode batch
   `generator.py incidents/incidents.txt`). `whatsapp.py` n'insère **plus**
   lui-même une fois `generate_from_block()` appelé (évite le double insert).
 
 ### 8.2 Fait : dashboard web (Next.js)
 
-- **`dashboard/`** — application **Next.js 16.3** (App Router, TypeScript) qui lit
+- **`dashboard/`** - application **Next.js 16.3** (App Router, TypeScript) qui lit
   `public.incidents` et affiche : statistiques (total / terminés / en cours /
   sites distincts), et un tableau de l'historique (TT, site, état, début, fin,
   porteur, cause, date) avec un bouton **Télécharger** par ligne.
 - **Téléchargement des fiches** : chaque « Télécharger » pointe vers `docx_url`
-  (fichier stocké dans le bucket Storage `fiches`) — servi depuis Supabase,
+  (fichier stocké dans le bucket Storage `fiches`) - servi depuis Supabase,
   pas depuis le PC local.
 - **Sécurité** : les données sont lues via un **Server Component**
   (`lib/incidents.ts` + `lib/supabase.ts`, libellé `server-only`). La clé
@@ -354,7 +354,7 @@ L'utilisateur veut évoluer vers une vraie plateforme avec **Supabase**.
 - **Auth Supabase** si multi-utilisateurs (actuellement mono-utilisateur,
   l'auteur lui-même).
 - Réfléchir à si `whatsapp-bot/bot.js` doit tourner sur un serveur distant
-  (VPS) plutôt qu'en local pour une vraie plateforme — implique de repenser
+  (VPS) plutôt qu'en local pour une vraie plateforme - implique de repenser
   la persistance de `auth_info/` et la stabilité 24/7 de la session
   WhatsApp (voir risques de ban, §3, qui deviennent plus importants avec un
   usage prolongé/continu).
@@ -370,9 +370,9 @@ dashboard).
 - Template : comparaison XML + rendu visuel LibreOffice, mise en forme
   identique à l'original.
 - Génération bout en bout : webhook simulé → parsing → mapping → docx →
-  (simulation) envoi WhatsApp — chaîne complète fonctionnelle.
+  (simulation) envoi WhatsApp - chaîne complète fonctionnelle.
 - En conditions réelles (vraie session WhatsApp de l'utilisateur) : réception
   des messages du groupe confirmée fonctionnelle par l'utilisateur.
   L'envoi automatique du docx généré n'a pas encore été confirmé en
-  conditions réelles au moment de la rédaction de ce fichier — à vérifier
+  conditions réelles au moment de la rédaction de ce fichier - à vérifier
   en premier si un agent reprend le projet ici.

@@ -6,7 +6,7 @@ import { statusOf } from "@/lib/status";
 import styles from "@/app/page.module.css";
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString("fr-FR", {
@@ -17,9 +17,9 @@ function formatDate(iso: string | null): string {
 }
 
 function formatTime(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "-";
   return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
@@ -100,9 +100,9 @@ export default function IncidentBrowser({ incidents }: { incidents: Incident[] }
                   }}
                 >
                   <td className={`${styles.mono} ${styles.stickyCol} ${styles.stickyFirst}`}>
-                    {inc.tt ?? "—"}
+                    {inc.tt ?? "-"}
                   </td>
-                  <td className={styles.strong}>{inc.site ?? "—"}</td>
+                  <td className={styles.strong}>{inc.site ?? "-"}</td>
                   <td>
                     <span className={`${styles.badge} ${styles[`badge${badge.kind}`]}`}>
                       {badge.label}
@@ -116,9 +116,9 @@ export default function IncidentBrowser({ incidents }: { incidents: Incident[] }
                     <div className={styles.dateCell}>{formatDate(inc.fin)}</div>
                     <div className={styles.timeCell}>{formatTime(inc.fin)}</div>
                   </td>
-                  <td>{inc.porteur ?? "—"}</td>
+                  <td>{inc.porteur ?? "-"}</td>
                   <td className={styles.truncate} title={inc.cause ?? ""}>
-                    {inc.cause ?? "—"}
+                    {inc.cause ?? "-"}
                   </td>
                   <td>
                     {inc.is_end ? (
@@ -144,7 +144,7 @@ export default function IncidentBrowser({ incidents }: { incidents: Incident[] }
                         <span>Fiche</span>
                       </a>
                     ) : (
-                      <span className={styles.noFiche}>—</span>
+                      <span className={styles.noFiche}>-</span>
                     )}
                   </td>
                 </tr>
@@ -226,7 +226,7 @@ function IncidentDialog({
         <div className={styles.ficheBody}>
           <p className={styles.ficheLabel}>Message reçu sur WhatsApp</p>
           <pre className={styles.raw}>
-            {incident.raw_message || "—"}
+            {incident.raw_message || "-"}
           </pre>
         </div>
 

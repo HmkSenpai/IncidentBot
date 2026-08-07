@@ -1,4 +1,4 @@
-# IncidentBot — Dashboard CAMTEL
+# IncidentBot - Dashboard CAMTEL
 
 Tableau de bord web (Next.js + Supabase) de l'application IncidentBot :
 consulte l'historique des fiches d'incidents CAMTEL générées automatiquement
@@ -22,7 +22,7 @@ npm run dev      # http://localhost:3000
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé anon (publique) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clé service_role — **serveur uniquement**, jamais envoyée au client |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé service_role - **serveur uniquement**, jamais envoyée au client |
 
 ## Prérequis
 

@@ -51,11 +51,11 @@ load_dotenv()
 
 
 # ---------------------------------------------------------------------------
-# Polish IA (optionnel) — DeepSeek et/ou OpenRouter, compatibles OpenAI
+# Polish IA (optionnel) - DeepSeek et/ou OpenRouter, compatibles OpenAI
 # ---------------------------------------------------------------------------
 # Activé automatiquement si une clé API est présente dans l'environnement
 # (ou dans .env.local). Sinon, le script utilise silencieusement le texte
-# déterministe (regex) en repli — aucune dépendance externe n'est requise
+# déterministe (regex) en repli - aucune dépendance externe n'est requise
 # pour fonctionner.
 #
 # Variables reconnues :
@@ -130,7 +130,7 @@ OBSERVATIONS_SYSTEM_PROMPT = (
 def call_llm(prompt: str, system_prompt: str, max_tokens: int = 300):
     """Appelle le fournisseur IA actif (DeepSeek ou OpenRouter). Retourne None
     si aucune clé n'est configurée, ou en cas d'échec (réseau, quota,
-    timeout...) — l'appelant doit alors utiliser un repli."""
+    timeout...) - l'appelant doit alors utiliser un repli."""
     provider = get_active_provider()
     if not provider or not prompt:
         return None
@@ -184,7 +184,7 @@ def call_llm(prompt: str, system_prompt: str, max_tokens: int = 300):
             detail = e.read().decode("utf-8")[:300]
         except Exception:
             pass
-        print(f"[polish IA] Échec de l'appel {provider} ({e}) — {detail}",
+        print(f"[polish IA] Échec de l'appel {provider} ({e}) - {detail}",
               file=sys.stderr)
         return None
     except (urllib.error.URLError, KeyError, TimeoutError, ValueError) as e:

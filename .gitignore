@@ -1,4 +1,4 @@
-# secrets — JAMAIS commités
+# secrets - JAMAIS commités
 .env
 .env.*
 !env.example

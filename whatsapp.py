@@ -4,7 +4,7 @@ Serveur webhook local qui reçoit les évènements d'Evolution API en temps
 réel, filtre les messages du groupe WhatsApp cible, et déclenche
 generator.py pour chaque nouveau message.
 
-Ne dépend que de la bibliothèque standard Python (http.server) — pas
+Ne dépend que de la bibliothèque standard Python (http.server) - pas
 d'installation supplémentaire nécessaire.
 
 Configuration (dans .env.local, à côté de ce fichier) :
@@ -39,7 +39,7 @@ SEND_PORT = int(os.environ.get("SEND_PORT", "5001"))
 def send_document_to_whatsapp(file_path: str, caption: str = ""):
     """Demande à bot.js (qui détient la session WhatsApp) d'envoyer le
     document généré. Échec silencieux (loggué) si bot.js n'est pas joignable
-    — la fiche reste de toute façon disponible localement dans output/."""
+    - la fiche reste de toute façon disponible localement dans output/."""
     if not REPORT_TARGET_JID:
         return
     payload = json.dumps({
@@ -123,7 +123,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
         label = f"{group_name!r}" if group_name else "(pas un groupe)"
 
         if not TARGET_GROUP_JID:
-            print(f"[whatsapp.py] Message reçu — groupe: {label}  JID: {remote_jid}  "
+            print(f"[whatsapp.py] Message reçu - groupe: {label}  JID: {remote_jid}  "
                   f"fromMe: {from_me}  aperçu: {text_preview!r}", file=sys.stderr)
             return
 

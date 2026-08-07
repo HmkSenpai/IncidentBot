@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Incidents CAMTEL — Dashboard",
+  title: "Incidents CAMTEL - Dashboard",
   description: "Historique des fiches d'incidents CAMTEL générées automatiquement",
 };
 
