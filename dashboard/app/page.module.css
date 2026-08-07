@@ -151,6 +151,11 @@
   font-family: var(--mono);
 }
 
+.liveHint {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* ---- Table ------------------------------------------------------------ */
 
 .tableWrap {
