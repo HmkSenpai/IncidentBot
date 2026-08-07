@@ -12,7 +12,6 @@ creds.json
 # runtime / générés
 /incidents
 /input
-/templates
 /output
 /IA
 /logs_*.txt
