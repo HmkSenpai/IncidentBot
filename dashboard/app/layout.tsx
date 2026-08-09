@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
+import PwaRegister from "./components/PwaRegister";
 
 const newsreader = Newsreader({
   variable: "--font-serif",
@@ -16,6 +17,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Incidents CAMTEL - Dashboard",
   description: "Historique des fiches d'incidents CAMTEL générées automatiquement",
+  themeColor: "#faf7f0",
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
@@ -26,7 +29,10 @@ export default function RootLayout({
       lang="fr"
       className={`${newsreader.variable} ${geistMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <PwaRegister />
+        {children}
+      </body>
     </html>
   );
 }

@@ -15,7 +15,7 @@ creds.json
 /output
 /IA
 /logs_*.txt
-
+/deploy
 # caches Python
 __pycache__/
 *.pyc
