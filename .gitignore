@@ -22,3 +22,5 @@ __pycache__/
 
 # dossiers supabase / node locaux
 supabase/.temp
+templates/fiche_template_backup.docx
+templates/fiche_template.docx

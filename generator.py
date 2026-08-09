@@ -25,9 +25,6 @@ import supabase_client  # insertion optionnelle des incidents dans Supabase
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "fiche_template.docx")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 
-FALLBACK = "A déterminer"
-
-
 def load_dotenv(filenames=(".env.local", ".env")):
     """Charge les variables d'un fichier .env.local / .env dans os.environ,
     sans écraser une variable déjà définie dans l'environnement (ex: export
@@ -110,20 +107,26 @@ def get_active_provider():
 
 
 DESCRIPTION_SYSTEM_PROMPT = (
-    "Tu reformules des notes techniques d'incidents télécom CAMTEL en français "
-    "professionnel, clair et concis (1 à 2 phrases). N'invente jamais d'information "
-    "absente du texte source. Corrige la grammaire, la ponctuation et la casse, mais "
-    "garde les sigles (BTS, CTT, FO, TT, IHS...) en majuscules. Réponds uniquement "
-    "avec le texte reformulé, sans préambule ni guillemets."
+    "Tu décris UNIQUEMENT les travaux effectués lors d'un incident télécom "
+    "CAMTEL, à partir des actions et commentaires fournis. Ne garde QUE l'action "
+    "de travail réalisée (ex: 'Reprise du support de transmission', 'Epissure des "
+    "câbles FO'), en une phrase, sans l'état final du site ni le contexte de "
+    "rétablissement (ex: retirer 'BTS UP', 'après le rétablissement du support de "
+    "transmission'). Rédige en français professionnel, concis et correct "
+    "grammaticalement. N'invente jamais d'information absente du texte source. "
+    "Garde les sigles (BTS, CTT, FO, TT, IHS...) en majuscules. Réponds "
+    "uniquement avec la phrase, sans préambule ni guillemets."
 )
 
 OBSERVATIONS_SYSTEM_PROMPT = (
     "Tu rédiges la section 'Observations' d'une fiche d'incident télécom CAMTEL. "
-    "À partir de la cause et de la chronologie de commentaires fournis, écris un "
-    "paragraphe professionnel et concis en français (3 à 5 phrases) qui résume : la "
-    "cause principale, les événements marquants, et la réparation effectuée le cas "
-    "échéant. N'invente aucune information absente du texte source. Réponds "
-    "uniquement avec le paragraphe, sans préambule ni guillemets."
+    "Ne garde QUE l'état final du site après l'intervention (ex: 'BTS UP après le "
+    "rétablissement du support de transmission'), en 1 phrase maximum, concise et "
+    "professionnelle. N'inclue NI la cause, NI la chronologie, NI les détails des "
+    "travaux. Si aucune information d'état final (BTS UP/DOWN, rétabli, etc.) "
+    "n'est présente dans le texte source, réponds par une chaîne vide. N'invente "
+    "aucune information absente du texte source. Réponds uniquement avec la phrase, "
+    "sans préambule ni guillemets."
 )
 
 
@@ -215,14 +218,14 @@ def format_sentence(text: str) -> str:
 
 def extract_etablissement(porteur):
     if not porteur:
-        return FALLBACK
+        return ""
     p = porteur.strip()
     m = re.search(r"CTT\s+.+", p, re.IGNORECASE)
     if m:
         return m.group(0).strip().upper()
     if p.upper().startswith("CMRF"):
         location = re.sub(r"^CMRF\s*/?\s*", "", p, flags=re.IGNORECASE).strip()
-        return f"CTT {location.upper()}" if location else FALLBACK
+        return f"CTT {location.upper()}" if location else ""
     return p
 
 
@@ -231,50 +234,91 @@ KNOWN_SITE_SUFFIXES = {"IHS", "CRTV"}  # marqueurs techniques à ignorer, pas de
 
 def extract_site(description):
     if not description:
-        return FALLBACK
+        return ""
     s = description.strip()
-    s = re.sub(r"\s+DOWN\s*$", "", s, flags=re.IGNORECASE).strip()
+    # "DOWN" / "UP" est l'état du site, pas le nom de la localisation
+    s = re.sub(r"\s+(DOWN|UP)\s*$", "", s, flags=re.IGNORECASE).strip()
     parts = s.split("_")
     if len(parts) < 2:
-        return s.upper() if s else FALLBACK
+        return s.upper() if s else ""
     parts = parts[1:]  # on retire le code site (1er segment)
     if len(parts) > 1 and parts[-1].strip().upper() in KNOWN_SITE_SUFFIXES:
         parts = parts[:-1]  # on retire le marqueur technique final (ex: IHS, CRTV)
     site = " ".join(p.strip() for p in parts if p.strip())
-    return site.upper() if site else FALLBACK
+    return site.upper() if site else ""
 
 
 def extract_localisation(description):
-    return description.strip() if description else FALLBACK
+    if not description:
+        return ""
+    s = description.strip()
+    # "DOWN" / "UP" est un état du site, pas une localisation
+    s = re.sub(r"\s+(DOWN|UP)\s*$", "", s, flags=re.IGNORECASE).strip()
+    return s
 
 
 def extract_cause(incident):
     if incident["is_end"]:
         cause = incident.get("cause")
-        return format_sentence(cause) if cause else FALLBACK
-    return "Investigation en cours"
+        return format_sentence(cause) if cause else ""
+    return ""
 
 
 def extract_clients_impactes(impact):
-    return impact.strip() if impact else FALLBACK
+    return impact.strip() if impact else ""
+
+
+# Marqueurs d'état final du site à séparer de l'action réalisée (repli regex).
+# L'IA fait ce tri avec beaucoup plus de robustesse ; ici c'est un best-effort.
+_STATE_MARKERS = (
+    "bts up", "bts down",
+    "après le rétablissement", "apres le retablissement",
+    "après rétablissement", "apres retablissement",
+    "rétablissement du support", "retablissement du support",
+    "after restoration", "restored",
+)
+
+
+def split_action_state(text: str):
+    """Sépare grossièrement l'action réalisée de l'état final du site.
+    Retourne (action, etat). Repli déterministe quand l'IA est indisponible."""
+    if not text:
+        return text, ""
+    s = text.strip()
+    lower = s.lower()
+    # État en tête de phrase (ex: "UP après les travaux de raccordement...")
+    m_head = re.match(r"^(BTS\s+)?(UP|DOWN)\s+apr[eè]s\b(.+)$", s, re.IGNORECASE)
+    if m_head:
+        action = m_head.group(3).strip().lstrip(" :").strip()
+        return action, f"{m_head.group(1) or ''}{m_head.group(2)}".strip()
+    for marker in _STATE_MARKERS:
+        idx = lower.find(marker)
+        if idx > 0:
+            return s[:idx].rstrip(" ,;-").strip(), s[idx:].strip()
+    # "UP" / "DOWN" isolé en fin de phrase (ex: "... raccordement câbles FO UP")
+    m = re.search(r"^(.*?)\s+(?:UP|DOWN)\b\s*$", s, re.IGNORECASE)
+    if m:
+        return m.group(1).strip(), s[m.start(1) + len(m.group(1)):].strip()
+    return s, ""
 
 
 def extract_description_travaux(incident):
     if not incident["is_end"]:
-        return "Investigation en cours"
+        return ""
     actions = incident.get("actions_menee")
     comments = incident.get("commentaires") or []
     last_comment = comments[-1]["text"] if comments else None
 
     # Version déterministe (repli si pas de clé API / échec réseau)
+    action_only, _ = split_action_state(actions) if actions else (None, "")
     parts = []
-    if actions:
-        parts.append(format_sentence(actions))
-    if last_comment and (not actions or last_comment.lower() not in actions.lower()):
+    if action_only:
+        parts.append(format_sentence(action_only))
+    if last_comment and (not action_only or last_comment.lower() not in action_only.lower()):
         parts.append(format_sentence(last_comment))
-    deterministic = " ".join(parts) if parts else "Investigation en cours"
+    deterministic = " ".join(parts) if parts else ""
 
-    raw_combo = " ".join(p for p in [actions, last_comment] if p)
+    raw_combo = " ".join(p for p in [action_only, last_comment] if p)
     if not raw_combo:
         return deterministic
 
@@ -284,34 +328,49 @@ def extract_description_travaux(incident):
 def extract_observations(incident):
     comments = incident.get("commentaires") or []
     if incident["is_end"]:
-        # Version déterministe (repli si pas de clé API / échec réseau)
-        cause = incident.get("cause")
-        pieces = []
-        if cause:
-            pieces.append(format_sentence(cause))
-        for c in comments:
-            pieces.append(format_sentence(c["text"]))
-        deterministic = " ".join(pieces) if pieces else "En cours"
+        # Version déterministe (repli si pas de clé API / échec réseau) :
+        # on ne garde QUE l'état final du site (ex: "BTS UP après..."),
+        # extrait du dernier commentaire si un marqueur d'état y est présent.
+        last_comment = comments[-1]["text"] if comments else None
+        state = ""
+        if last_comment:
+            _, state = split_action_state(last_comment)
+        deterministic = format_sentence(state) if state else ""
 
         cause_text = incident.get("cause") or ""
         comments_text = "\n".join(f"- {c['date']}: {c['text']}" for c in comments)
         prompt = f"Cause de l'incident : {cause_text}\n\nChronologie des commentaires :\n{comments_text}"
-        if not cause_text and not comments_text:
+        if not comments_text:
             return deterministic
 
         return polish_with_ai(prompt, OBSERVATIONS_SYSTEM_PROMPT, deterministic, max_tokens=700)
     else:
         if comments:
             return format_sentence(comments[-1]["text"])
-        return "Les investigations sont toujours en cours."
+        return ""
 
 
 def extract_date_retablissement(incident):
-    return incident["fin"] if incident["is_end"] and incident.get("fin") else "En cours"
+    return incident["fin"] if incident["is_end"] and incident.get("fin") else ""
 
 
 def extract_date_fin_intervention(incident):
-    return incident["fin"] if incident["is_end"] and incident.get("fin") else "En cours"
+    return incident["fin"] if incident["is_end"] and incident.get("fin") else ""
+
+
+# Longueur maximale (caractères) des champs texte libres, pour garantir que
+# la fiche tienne TOUJOURS sur une seule page A4.
+FIELD_MAX_LEN = 130
+
+
+def truncate_field(text: str, max_len: int = FIELD_MAX_LEN) -> str:
+    """Tronque un champ trop long sans couper au milieu d'un mot."""
+    if not text or len(text) <= max_len:
+        return text
+    cut = text[:max_len]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,;:-") + "…"
 
 
 def map_incident_to_fiche(incident: dict) -> dict:
@@ -319,19 +378,19 @@ def map_incident_to_fiche(incident: dict) -> dict:
     etablissement = extract_etablissement(incident.get("porteur"))
     return {
         "ETABLISSEMENT": etablissement,
-        "SITE": extract_site(incident.get("description")),
-        "DATE_INCIDENT": incident.get("debut") or FALLBACK,
-        "DATE_INFORMATION": incident.get("recu") or FALLBACK,
-        "DATE_DEPART_TERRAIN": "En attente",
-        "LOCALISATION": extract_localisation(incident.get("description")),
-        "CAUSE": extract_cause(incident),
-        "CLIENTS_IMPACTES": extract_clients_impactes(incident.get("impact")),
-        "DESCRIPTION_TRAVAUX": extract_description_travaux(incident),
-        "DATE_DEBUT_INTERVENTION": "Non renseignée",
+        "SITE": truncate_field(extract_site(incident.get("description")), 60),
+        "DATE_INCIDENT": incident.get("debut") or "",
+        "DATE_INFORMATION": incident.get("recu") or "",
+        "DATE_DEPART_TERRAIN": "",
+        "LOCALISATION": truncate_field(extract_localisation(incident.get("description"))),
+        "CAUSE": truncate_field(extract_cause(incident)),
+        "CLIENTS_IMPACTES": truncate_field(extract_clients_impactes(incident.get("impact")), 120),
+        "DESCRIPTION_TRAVAUX": truncate_field(extract_description_travaux(incident)),
+        "DATE_DEBUT_INTERVENTION": "",
         "DATE_RETABLISSEMENT": extract_date_retablissement(incident),
         "DATE_FIN_INTERVENTION": extract_date_fin_intervention(incident),
-        "OBSERVATIONS": extract_observations(incident),
-        "EQUIPE_INTERVENTION": f"{etablissement} pour compétences",
+        "OBSERVATIONS": truncate_field(extract_observations(incident), 160),
+        "EQUIPE_INTERVENTION": etablissement,
     }
 
 
@@ -390,7 +449,7 @@ def build_filename(incident: dict, fiche_fields: dict) -> str:
     if m:
         date_part = f"{m.group(1)}{m.group(2)}{m.group(3)}"
         heure_part = f"{m.group(4)}h{m.group(5)}"
-    site = fiche_fields["SITE"].replace(" ", "_") if fiche_fields["SITE"] != FALLBACK else "SITE_INCONNU"
+    site = fiche_fields["SITE"].replace(" ", "_") if fiche_fields["SITE"] else "SITE_INCONNU"
     parts = [f"Fiche de releve des incidents sur le mobile TT{tt}", date_part]
     if heure_part:
         parts.append(heure_part)
