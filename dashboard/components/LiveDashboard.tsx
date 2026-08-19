@@ -5,7 +5,11 @@ import type { Incident } from "@/lib/types";
 import { FILTERS, filterIncidents, statusOf } from "@/lib/status";
 import type { IncidentFilter } from "@/lib/status";
 import styles from "@/app/page.module.css";
-import { searchIncidents, } from "@/lib/status";
+import { } from "@/lib/status";
+import {
+  filterByDateRange,
+  searchIncidents,} from "@/lib/status";
+import type { DateRange } from "@/lib/status";
 // Intervalle de rafraîchissement du tableau de bord (en direct).
 const POLL_MS = 6000;
 
@@ -142,6 +146,7 @@ export default function LiveDashboard({ initial }: { initial: Incident[] }) {
   const [items, setItems] = useState<Incident[]>(initial);
   const [filter, setFilter] = useState<IncidentFilter>("tous");
   const [search, setSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
 
   // Rafraîchit les données sans recharger la page ("En direct").
   useEffect(() => {
@@ -166,7 +171,10 @@ export default function LiveDashboard({ initial }: { initial: Incident[] }) {
     };
   }, []);
 
-  const filtered = searchIncidents(filterIncidents(items, filter), search);
+ const filtered = filterByDateRange(
+  searchIncidents(filterIncidents(items, filter), search),
+  dateRange
+);
 
   const total = items.length;
   const ended = items.filter((i) => statusOf(i) === "end").length;
@@ -206,7 +214,7 @@ export default function LiveDashboard({ initial }: { initial: Incident[] }) {
     type="text"
     value={search}
     onChange={(e) => setSearch(e.target.value)}
-    placeholder="Rechercher par TT, site ou date..."
+    placeholder="Rechercher par CTT, site ..."
     className={styles.searchInput}
     aria-label="Rechercher un incident"
   />
@@ -216,6 +224,37 @@ export default function LiveDashboard({ initial }: { initial: Incident[] }) {
       className={styles.searchClear}
       onClick={() => setSearch("")}
       aria-label="Effacer la recherche"
+    >
+      ×
+    </button>
+  )}
+</div>
+<div className={styles.dateRangeWrap}>
+  <input
+    type="date"
+    value={dateRange.from}
+    onChange={(e) =>
+      setDateRange((r) => ({ ...r, from: e.target.value }))
+    }
+    className={styles.dateInput}
+    aria-label="Date de début"
+  />
+  <span className={styles.dateSep}>→</span>
+  <input
+    type="date"
+    value={dateRange.to}
+    onChange={(e) =>
+      setDateRange((r) => ({ ...r, to: e.target.value }))
+    }
+    className={styles.dateInput}
+    aria-label="Date de fin"
+  />
+  {(dateRange.from || dateRange.to) && (
+    <button
+      type="button"
+      className={styles.searchClear}
+      onClick={() => setDateRange({ from: "", to: "" })}
+      aria-label="Effacer les dates"
     >
       ×
     </button>
