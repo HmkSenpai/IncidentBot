@@ -31,7 +31,7 @@ export default async function Home() {
 
       <footer className={styles.footer}>
         <span className={styles.footerText}>
-          Réalisé par <strong>Hmksenpai</strong>
+          Réalisé par <strong>-</strong>
         </span>
         <span className={styles.footerSep} aria-hidden="true" />
         <nav className={styles.footerLinks} aria-label="À propos du créateur">
