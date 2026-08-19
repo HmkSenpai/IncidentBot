@@ -16,7 +16,7 @@ import json
 # "Incident GSM/UMTS/LTE/CDMA | END"  ou  "... | UPDATE 01"
 INCIDENT_START_RE = re.compile(
     r"^Incident\s+GSM/UMTS/LTE/CDMA\s*\|\s*(?P<etat>.+)$",
-    re.MULTILINE,
+    re.MULTILINE | re.IGNORECASE,
 )
 
 # Champs simples "CLE: valeur" (une seule ligne)
