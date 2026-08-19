@@ -7,7 +7,6 @@ export const FILTERS = [
   { value: "tous", label: "Tous" },
   { value: "termines", label: "Terminés" },
   { value: "encours", label: "En cours" },
-  { value: "nouveaux", label: "Nouveaux" },
 ] as const;
 
 export type IncidentFilter = (typeof FILTERS)[number]["value"];
@@ -18,8 +17,8 @@ export function statusOf(inc: Incident): IncidentStatus {
   if (inc.is_end) return "end";
   const etat = (inc.etat ?? "").trim();
   if (/update/i.test(etat)) return "open";
-  if (/new/i.test(etat)) return "new";
-  return "new";
+  if (/new/i.test(etat)) return "open";
+  return "open";
 }
 
 export function filterIncidents(
@@ -35,7 +34,7 @@ export function filterIncidents(
 export const FILTER_TO_STATUS: Record<Exclude<IncidentFilter, "tous">, IncidentStatus> = {
   termines: "end",
   encours: "open",
-  nouveaux: "new",
+  nouveaux: "open",
 };
 
 export function countByStatus(incidents: Incident[]): Record<
