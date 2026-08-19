@@ -415,6 +415,34 @@
   color: var(--accent);
   background: var(--paper-2);
 }
+.dateRangeWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+.dateInput {
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--ink-strong);
+  color-scheme: light;
+}
+
+.dateInput:focus {
+  outline: none;
+}
+
+.dateSep {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
 .tab {
   display: inline-flex;
   align-items: center;

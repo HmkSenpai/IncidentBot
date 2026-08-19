@@ -74,3 +74,47 @@ export function searchIncidents(
     return haystack.includes(q);
   });
 }
+// Parse une date au format "DD/MM/YYYY HH:MM" (ou juste "DD/MM/YYYY") en Date.
+// Retourne null si le format ne correspond pas.
+export function parseIncidentDate(raw: string | null): Date | null {
+  if (!raw) return null;
+  const m = raw
+    .trim()
+    .match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
+  if (!m) return null;
+  const [, day, month, year, hour = "00", minute = "00"] = m;
+  const d = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute)
+  );
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export type DateRange = {
+  from: string; // "YYYY-MM-DD" (format natif <input type="date">) ou ""
+  to: string;   // idem
+};
+
+// Filtre sur la date de début de l'incident (inc.debut). Bornes inclusives.
+// Un incident sans date exploitable (debut non parsable) est exclu dès
+// qu'un filtre de date est actif.
+export function filterByDateRange(
+  incidents: Incident[],
+  range: DateRange
+): Incident[] {
+  if (!range.from && !range.to) return incidents;
+
+  const from = range.from ? new Date(`${range.from}T00:00:00`) : null;
+  const to = range.to ? new Date(`${range.to}T23:59:59`) : null;
+
+  return incidents.filter((inc) => {
+    const d = parseIncidentDate(inc.debut);
+    if (!d) return false;
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+  });
+}
