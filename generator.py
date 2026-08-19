@@ -50,20 +50,6 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # Polish IA (optionnel) - DeepSeek et/ou OpenRouter, compatibles OpenAI
 # ---------------------------------------------------------------------------
-# Activé automatiquement si une clé API est présente dans l'environnement
-# (ou dans .env.local). Sinon, le script utilise silencieusement le texte
-# déterministe (regex) en repli - aucune dépendance externe n'est requise
-# pour fonctionner.
-#
-# Variables reconnues :
-#   AI_PROVIDER          "deepseek" ou "openrouter" (auto-détecté si absent)
-#   DEEPSEEK_API_KEY      clé DeepSeek
-#   DEEPSEEK_MODEL        défaut: deepseek-v4-flash
-#   OPENROUTER_API_KEY    clé OpenRouter
-#   OPENROUTER_MODEL      défaut: z-ai/glm-4.5-air:free
-#                         -> vérifiez le modèle gratuit actuel sur
-#                            https://openrouter.ai/models (filtre "free"),
-#                            le catalogue change régulièrement.
 
 AI_TIMEOUT_SECONDS = int(os.environ.get("AI_TIMEOUT_SECONDS", "45"))
 
@@ -78,10 +64,6 @@ PROVIDERS = {
         "url": "https://openrouter.ai/api/v1/chat/completions",
         "key_env": "OPENROUTER_API_KEY",
         "model_env": "OPENROUTER_MODEL",
-        # Le catalogue "free" d'OpenRouter change souvent. Vérifiez le slug
-        # exact (champ "model" du snippet de code) sur la page du modèle
-        # choisi, sur https://openrouter.ai/models (filtre "free"), et
-        # surchargez avec OPENROUTER_MODEL dans .env.local au besoin.
         "default_model": "openai/gpt-oss-20b:free",
     },
 }

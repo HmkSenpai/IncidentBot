@@ -5,7 +5,8 @@
   "description": "Connexion directe à WhatsApp Web (Baileys), sans Docker. Transmet les messages du groupe incidents à whatsapp.py.",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "restart": "powershell -NoProfile -ExecutionPolicy Bypass -File start-bot.ps1"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.0",
