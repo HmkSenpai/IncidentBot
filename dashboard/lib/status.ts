@@ -34,7 +34,6 @@ export function filterIncidents(
 export const FILTER_TO_STATUS: Record<Exclude<IncidentFilter, "tous">, IncidentStatus> = {
   termines: "end",
   encours: "open",
-  nouveaux: "open",
 };
 
 export function countByStatus(incidents: Incident[]): Record<
