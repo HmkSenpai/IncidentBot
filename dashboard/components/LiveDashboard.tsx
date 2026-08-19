@@ -265,7 +265,7 @@ function IncidentTable({ incidents }: { incidents: Incident[] }) {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={`${styles.stickyCol} ${styles.stickyFirst}`}>TT</th>
+              <th className={`${styles.stickyCol} ${styles.stickyFirst}`}>CTT</th>
               <th>Site</th>
               <th>État</th>
               <th>Début</th>
