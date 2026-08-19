@@ -5,7 +5,7 @@ import type { Incident } from "@/lib/types";
 import { FILTERS, filterIncidents, statusOf } from "@/lib/status";
 import type { IncidentFilter } from "@/lib/status";
 import styles from "@/app/page.module.css";
-
+import { searchIncidents, } from "@/lib/status";
 // Intervalle de rafraîchissement du tableau de bord (en direct).
 const POLL_MS = 6000;
 
@@ -56,7 +56,23 @@ function DownloadIcon() {
     </svg>
   );
 }
-
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={styles.searchIcon}
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
 // ---- SVG icons (Lucide/Heroicons) --------------------------------------
 
 function StatIcon({ name }: { name: "total" | "open" | "closed" | "sites" }) {
@@ -125,6 +141,7 @@ function StatCard({
 export default function LiveDashboard({ initial }: { initial: Incident[] }) {
   const [items, setItems] = useState<Incident[]>(initial);
   const [filter, setFilter] = useState<IncidentFilter>("tous");
+  const [search, setSearch] = useState("");
 
   // Rafraîchit les données sans recharger la page ("En direct").
   useEffect(() => {
@@ -149,7 +166,7 @@ export default function LiveDashboard({ initial }: { initial: Incident[] }) {
     };
   }, []);
 
-  const filtered = filterIncidents(items, filter);
+  const filtered = searchIncidents(filterIncidents(items, filter), search);
 
   const total = items.length;
   const ended = items.filter((i) => statusOf(i) === "end").length;
@@ -183,7 +200,27 @@ export default function LiveDashboard({ initial }: { initial: Incident[] }) {
             )}
           </span>
         </div>
-
+  <div className={styles.searchWrap}>
+  <SearchIcon />
+  <input
+    type="text"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    placeholder="Rechercher par TT, site ou date..."
+    className={styles.searchInput}
+    aria-label="Rechercher un incident"
+  />
+  {search && (
+    <button
+      type="button"
+      className={styles.searchClear}
+      onClick={() => setSearch("")}
+      aria-label="Effacer la recherche"
+    >
+      ×
+    </button>
+  )}
+</div>
         <nav className={styles.tabs} aria-label="Filtrer par état">
           {FILTERS.map((f) => {
             const active = filter === f.value;

@@ -49,3 +49,28 @@ export function countByStatus(incidents: Incident[]): Record<
   for (const inc of incidents) counts[statusOf(inc)] += 1;
   return counts;
 }
+
+// Recherche libre sur TT, site, localisation et dates (début/fin).
+// Insensible à la casse, tolère un texte partiel.
+export function searchIncidents(
+  incidents: Incident[],
+  query: string
+): Incident[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return incidents;
+
+  return incidents.filter((inc) => {
+    const haystack = [
+      inc.tt,
+      inc.site,
+      inc.localisation,
+      inc.debut,
+      inc.fin,
+      inc.etat,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  });
+}
