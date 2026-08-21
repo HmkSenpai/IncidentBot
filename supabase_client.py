@@ -21,8 +21,9 @@ import sys
 try:
     from supabase import create_client, ClientOptions
     _SUPABASE_IMPORTABLE = True
-except Exception:
+except Exception as e:
     _SUPABASE_IMPORTABLE = False
+    _SUPABASE_IMPORT_ERROR = e
 
 _PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -55,6 +56,9 @@ def get_client():
         return _client_cache
 
     if not _SUPABASE_IMPORTABLE:
+        print(f"[supabase_client] Paquet Python 'supabase' indisponible ({_SUPABASE_IMPORT_ERROR}). "
+              "Installez les dépendances avec: python -m pip install -r requirements.txt",
+              file=sys.stderr)
         return None
 
     _load_dotenv_local()
