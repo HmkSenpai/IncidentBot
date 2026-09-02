@@ -36,14 +36,6 @@ export default async function Home() {
         <span className={styles.footerSep} aria-hidden="true" />
         <nav className={styles.footerLinks} aria-label="À propos du créateur">
           <a
-            href="https://cloudfoliooo.netlify.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.footerLink}
-          >
-            Portfolio
-          </a>
-          <a
             href="https://github.com/HmkSenpai"
             target="_blank"
             rel="noopener noreferrer"

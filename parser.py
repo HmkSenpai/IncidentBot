@@ -60,6 +60,11 @@ def parse_comments(block_text: str) -> list:
     return comments
 
 
+def clean_porteur(value: str) -> str:
+    """Retire la mention WhatsApp ajoutée après le nom du porteur."""
+    return value.split("@", 1)[0].strip()
+
+
 def parse_incident(block_text: str) -> dict:
     """Parse un seul bloc incident et retourne un dict structuré."""
 
@@ -87,7 +92,8 @@ def parse_incident(block_text: str) -> dict:
             rf"^(?:{label_pattern}):[ \t]*(.*)$", re.MULTILINE
         )
         m = pattern.search(block_text)
-        data[json_key] = m.group(1).strip() if m and m.group(1).strip() else None
+        value = m.group(1).strip() if m and m.group(1).strip() else None
+        data[json_key] = clean_porteur(value) if json_key == "porteur" and value else value
 
     # Bloc COMMENTAIRES : tout ce qui suit "COMMENTAIRES:" jusqu'à "RFO:"
     # ou la fin du bloc.
